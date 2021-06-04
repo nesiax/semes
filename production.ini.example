@@ -24,7 +24,7 @@ semes.maxparts = 2
 
 [server:main]
 use = egg:waitress#main
-listen = *:7384
+listen = *:6543
 
 ###
 # logging configuration
