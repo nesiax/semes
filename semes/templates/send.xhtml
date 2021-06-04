@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      tal:define="master load: layout.xhtml"
+      metal:use-macro="master.macros.layout"
+      i18n:domain="patenis"
+      >
+  <head>
+    <title>Send SMS</title>
+  </head>
+
+  <body>
+
+    <metal:block fill-slot="content">
+
+      <div class="content">
+
+        <tal:block condition="status">
+
+          <div class="alert alert-success">
+            <div class="error-msg-lbl"
+                 >Success.</div>
+            <div class="error-msg-detail"
+                 i18n:translate=""
+                 >Message sent to <span i18n:name="e164_phone" tal:replace="e164_phone"/> with IDs: <span i18n:name="ids" tal:replace="submission_ids"/>.</div>
+          </div>
+
+          <div tal:condition="exists: form_rendered">
+            ${structure: form_rendered}
+          </div>
+
+        </tal:block>
+
+        <tal:block condition="not: status">
+
+          <div tal:condition="exists: form_rendered">
+            ${structure: form_rendered}
+          </div>
+
+        </tal:block>
+
+      </div>
+
+    </metal:block>
+
+  </body>
+
+  <tal:block comment="Emacs configuration"
+             condition="False">
+    <!--
+        For Emacs:
+        Local Variables:
+        mode: nxml
+        eval: (rng-set-vacuous-schema)
+        coding: utf-8
+        End:
+    -->
+  </tal:block>
+
+</html>

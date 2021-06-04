@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    lang="${request.locale_name}"
+    xml:lang="${request.locale_name}"
+    metal:define-macro="layout"
+    >
+  <head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description" content="pyramid web application"/>
+    <meta name="author" content="Pylons Project"/>
+    <link rel="shortcut icon" href="${request.static_url('semes:static/pyramid-16x16.png')}"/>
+
+    <title tal:condition="exists: title"
+           tal:content="title">
+      Cookiecutter Starter project for the Pyramid Web Framework
+    </title>
+
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet"
+          href="${request.static_url('semes:static/bootstrap/3.4.1/css/bootstrap.min.css')}"
+          />
+
+    <!-- Custom styles for this scaffold -->
+    <link href="${request.static_url('semes:static/theme.css')}" rel="stylesheet"/>
+
+    <!-- HTML5 shiv and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+        <script src="${request.static_url('semes:static/html5shiv/3.7.3/html5shiv.min.js')}"></script>
+        <script src="${request.static_url('semes:static/respond/1.4.2/respond.min.js')}"></script>
+        <![endif]-->
+
+    <!-- Bootstrap core CSS -->
+    <link tal:condition="False"
+          rel="stylesheet"
+          href="${request.static_url('deform:static/css/bootstrap.min.css')}"
+          type="text/css" media="screen" charset="utf-8"/>
+    <link rel="stylesheet"
+          href="${request.static_url('deform:static/css/form.css')}"
+          type="text/css"/>
+    <tal:block condition="exists: reqts"
+               repeat="reqt reqts['css']">
+      <link rel="stylesheet" type="text/css"
+            href="${request.static_url(reqt)}" />
+    </tal:block>
+
+
+    <!-- Inline CSS -->
+    <style  type="text/css">
+
+      /* Remove the navbar's default margin-bottom and rounded borders */
+      .navbar {
+      margin-bottom: 0;
+      border-radius: 0;
+      }
+
+      /* Set gray background color and 100% height */
+      .sidenav {
+      padding: 1em 0.5em;
+      background-color: #f1f1f1;
+      height: 100%;
+      }
+
+      /* Set black background color, white text and some padding */
+      footer {
+      background-color: #555;
+      color: white;
+      padding: 15px;
+      }
+    </style>
+
+  </head>
+
+  <body>
+
+    <nav class="navbar navbar-inverse">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a tal:attributes="href request.route_url('home')"
+             class="navbar-brand" href="#">Semes</a>
+        </div>
+      </div>
+    </nav>
+
+
+    <div class="container-fluid"
+         >
+      <div class="row content">
+
+
+        <div class="col-sm-2 sidenav">
+          <p><a tal:attributes="href request.route_url('send')"
+                href="#">Send</a></p>
+        </div>
+
+
+        <div class="col-sm-10 text-left">
+          <h2 tal:condition="exists: title"
+              tal:content="title"></h2>
+          <div metal:define-slot="content">No content</div>
+        </div>
+
+        <div tal:condition="False"
+
+class="col-sm-2 sidenav">
+          <div class="well">
+            <p>ADS</p>
+          </div>
+          <div class="well">
+            <p>ADS</p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- Inline JavaScript -->
+    <script type="text/javascript"
+            tal:condition="exists: inline_js">
+      <tal:block replace="structure: inline_js"></tal:block>
+    </script>
+
+    <!-- Bootstrap core JavaScript
+         ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="${request.static_url('semes:static/js/jquery-1.12.4.min.js')}">
+    </script>
+
+    <script src="${request.static_url('semes:static/bootstrap/3.4.1/js/bootstrap.min.js')}">
+    </script>
+
+    <tal:block condition="exists: reqts"
+               repeat="reqt reqts['js']">
+      <script src="${request.static_url(reqt)}">
+      </script>
+
+    </tal:block>
+
+    <footer class="container-fluid text-center">
+      <p>Semes &#169; 2021 by Nestor Diaz</p>
+    </footer>
+
+    <div tal:comment="Emacs configuration"
+         tal:condition="nothing">
+      <!--
+          For Emacs:
+          Local Variables:
+          mode: nxml
+          eval: (rng-set-vacuous-schema)
+          coding: utf-8
+          End:
+      -->
+    </div>
+
+  </body>
+</html>

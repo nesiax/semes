@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      tal:define="master load: layout.xhtml"
+      metal:use-macro="master.macros.layout"
+      i18n:domain="patenis"
+      >
+  <head>
+    <title>404</title>
+  </head>
+
+  <body>
+
+    <div metal:fill-slot="content">
+
+      <div class="content">
+        <h1><span class="font-semi-bold">Pyramid</span> <span class="smaller">Starter project</span></h1>
+        <p class="lead"><span class="font-semi-bold">404</span> Page Not Found</p>
+      </div>
+
+    </div>
+  </body>
+
+  <tal:block comment="Emacs configuration"
+             condition="False">
+    <!--
+        For Emacs:
+        Local Variables:
+        mode: nxml
+        eval: (rng-set-vacuous-schema)
+        coding: utf-8
+        End:
+      -->
+  </tal:block>
+
+</html>

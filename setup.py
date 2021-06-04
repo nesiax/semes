@@ -9,11 +9,16 @@ with open(os.path.join(here, 'CHANGES.txt')) as f:
     CHANGES = f.read()
 
 requires = [
+    'PasteScript',
     'plaster_pastedeploy',
     'pyramid',
     'pyramid_chameleon',
     'pyramid_debugtoolbar',
     'waitress',
+    'python-gammu',
+    'colander',
+    'deform',
+    'phonenumbers',
 ]
 
 tests_require = [
@@ -24,7 +29,7 @@ tests_require = [
 
 setup(
     name='semes',
-    version='0.0',
+    version='0.2.1',
     description='semes',
     long_description=README + '\n\n' + CHANGES,
     classifiers=[
@@ -33,10 +38,10 @@ setup(
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Internet :: WWW/HTTP :: WSGI :: Application',
     ],
-    author='',
-    author_email='',
-    url='',
-    keywords='web pyramid pylons',
+    author='Nestor Diaz',
+    author_email='nestor@tiendalinux.com',
+    url='https://github.com/nesiax/semes',
+    keywords='web pyramid pylons sms gammu',
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
