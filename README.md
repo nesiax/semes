@@ -1,4 +1,4 @@
 # semes
 Webservice for sending sms using gammu sms daemon
 
-![Send Message](doc/images/send.png?raw=true "Send Message")
+![Send Message](doc/images/send.png?raw=true "Send Message" | width=50)
