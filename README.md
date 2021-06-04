@@ -1,4 +1,4 @@
 # semes
 Webservice for sending sms using gammu sms daemon
 
-![Send Message](doc/images/send.png?raw=true "Send Message" | width=50)
+<img src="https://github.com/nesiax/semes/blob/main/doc/images/send.png" width="360" height="760"/>
