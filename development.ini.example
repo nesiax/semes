@@ -19,10 +19,8 @@ pyramid.includes =
 # debugtoolbar.hosts = 127.0.0.1 ::1
 
 # semes
-semes.ascii_length = 160
-semes.unicode_length = 58
-semes.multipart = True
-semes.maxparts = 2
+semes.max_parts = 2
+semes.smsdrc = /etc/gammu-smsdrc
 
 ###
 # wsgi server configuration
