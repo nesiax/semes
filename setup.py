@@ -29,7 +29,7 @@ tests_require = [
 
 setup(
     name='semes',
-    version='0.2.1',
+    version='0.3',
     description='semes',
     long_description=README + '\n\n' + CHANGES,
     classifiers=[
