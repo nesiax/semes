@@ -13,10 +13,8 @@ pyramid.debug_routematch = false
 pyramid.default_locale_name = en
 
 # semes
-semes.ascii_length = 160
-semes.unicode_length = 58
-semes.multipart = True
-semes.maxparts = 2
+semes.max_parts = 2
+semes.smsdrc = /etc/gammu-smsdrc
 
 ###
 # wsgi server configuration
