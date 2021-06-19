@@ -2,16 +2,20 @@
 default views
 """
 
-from pyramid.view import view_config, view_defaults
-from pyramid.httpexceptions import HTTPFound
-from pyramid.settings import asbool
-
+import logging
 import colander
 import deform.widget
+
+from pyramid.view import view_config, view_defaults
+from pyramid.httpexceptions import HTTPFound
+#from pyramid.settings import asbool
+
 from deform.widget import Invalid
 
 import gammu.smsd
 import phonenumbers
+
+LOG = logging.getLogger(__name__)
 
 @view_config(route_name='home')
 def home(request):
@@ -20,77 +24,59 @@ def home(request):
     return HTTPFound(location=url)
 
 
-def phoneok(node, value):
-    """ checks to make sure is a valid phone number """
-    try:
-        phone = phonenumbers.parse(value, None)
+def encodeSMS(message): # pylint: disable=invalid-name
+    """ encode message to SMS """
 
-        if phonenumbers.is_possible_number(phone) \
-           and phonenumbers.is_valid_number(phone):
-            return None
+    entry_id = 'ConcatenatedTextLong'
 
-        raise Invalid(node,
-                      '%s is not a valid phone number' % value)
+    smsinfo = {
+        'Unicode': not message.isascii(),
+        'Entries':  [
+            {   'ID': entry_id,
+                'Buffer': message
+            }
+        ]}
 
-    except phonenumbers.phonenumberutil.NumberParseException as exc:
-        raise Invalid(node,
-                      '%s is not a valid phone number' % value) from exc
+    encoded = gammu.EncodeSMS(smsinfo) # pylint: disable=no-member
 
+    return encoded
 
-@view_defaults(route_name='send', renderer='../templates/send.xhtml')
-class Send:
+def sendSMS(encoded, smsdrc, e164_phone): # pylint: disable=invalid-name
     """ Send SMS """
 
+    smsd = gammu.smsd.SMSD(smsdrc)
 
-    def lenok(self, text, **settings):
-        """ checks to make sure is text is valid lenght """
+    submission_ids = []
 
-        ascii_length = int(settings.get('ascii_length', self.ascii_length))
-        unicode_length = int(settings.get('unicode_length', self.unicode_length))
-        multipart = asbool(settings.get("semes.multipart", self.multipart))
+    for msgstruct in encoded:
+        # Fill in numbers
+        msgstruct['SMSC'] = {'Location': 1}
+        msgstruct['Number'] = e164_phone
 
-        #import pdb;  pdb.set_trace()
+        # Send the msgstruct
+        submission_ids.append (smsd.InjectSMS([msgstruct]))
 
-        status = False
-        msg = None
-
-        if multipart is False:
-
-            if text.isascii():
-                if len(text) > ascii_length:
-                    msg = ('ASCII message length is %s ' \
-                           'and exceeds %s characters limit.') \
-                           % (len(text), ascii_length)
-                else:
-                    status = True
-            else:
-                if len(text) > unicode_length:
-                    msg = ('UTF-8 message length is %s ' \
-                           'and exceeds %s characters limit.') \
-                           % (len(text), unicode_length)
-                else:
-                    status = True
-        else:
-            status = True
-
-        return {'status': status, 'msg': msg}
+    return submission_ids
 
 
+class SendForm():
+    """ Send Form """
 
-    @staticmethod
-    def _form():
+    def __init__(self, max_parts):
         """ form for sending sms message"""
 
         class Schema(colander.Schema):
             """ sms schema """
+
             phone = colander.SchemaNode(
                 colander.String(),
                 title="Phone number",
                 description="Type the phone number",
-                validator=phoneok,
+                preparer=SendForm.prepare_phone,
+                validator=SendForm.phoneok,
                 widget=deform.widget.TextInputWidget(
                     attributes={
-                        "placeholder": "+570001112222",
+                        "placeholder": "+573223334444",
                     }),
             )
 
@@ -102,29 +88,83 @@ class Send:
                         "placeholder": "Type some message.",
                     }),
                 description="Enter some text",
+                validator=colander.All(SendForm.lenok),
+                settings={'max_parts': max_parts,},
             )
 
         schema = Schema()
-        form = deform.Form(schema, buttons=("submit",))
 
-        return form
+        #import pdb;  pdb.set_trace()
+
+        self.form = deform.Form(schema, buttons=("submit",))
+
+
+    @staticmethod
+    def prepare_phone(value):
+        """ return fake """
+        #import pdb;  pdb.set_trace()
+        try:
+            phone =  phonenumbers.\
+                format_number(phonenumbers.parse(value, None),
+                              phonenumbers.PhoneNumberFormat.E164)
+            return phone
+        except Exception as exc: # pylint: disable=broad-except
+            LOG.debug(exc)
+            return value
+
+    @staticmethod
+    def phoneok(node, value):
+        """ checks to make sure is a valid phone number """
+        try:
+            phone = phonenumbers.parse(value, None)
+
+            if phonenumbers.is_possible_number(phone) \
+               and phonenumbers.is_valid_number(phone):
+                return None
+
+            raise Invalid(node,
+                          '%s is not a valid phone number' % value)
+
+        except phonenumbers.phonenumberutil.NumberParseException as exc:
+            raise Invalid(node,
+                          '%s is not a valid phone number' % value) from exc
+
+    @staticmethod
+    def lenok(node, value):
+        """ checks to make sure is value is valid lenght """
+
+        # import pdb;  pdb.set_trace()
+
+        max_parts = node.settings['max_parts']
+
+        encoded = encodeSMS(value)
+
+        len_parts = len (encoded)
+        len_chars = sum ([message['Length'] for message in encoded] )
+
+        if len_parts > max_parts:
+            error = \
+                ('Maximum SMS per message is %s. ' + \
+                 'Your message span %s SMS and have %s characters.') \
+                 % (max_parts, len_parts, len_chars)
+
+            raise Invalid(node, error)
+
+
+@view_defaults(route_name='send', renderer='../templates/send.xhtml')
+class Send:
+    """ Send SMS """
 
     def __init__(self, request):
         self.request = request
-        self.smsd = gammu.smsd.SMSD('/etc/gammu-smsdrc')
+        self.smsdrc = request.registry.settings.get('semes.smsdrc',
+                                                    '/etc/gammu-smsdrc')
+        self.max_parts = int(
+            request.registry.settings.get('semes.max_parts', 2))
+
         self.form = self._form()
 
-        self.ascii_length = int(request.registry.settings.get(
-            'semes.ascii_length',160))
-        self.unicode_length = int(request.registry.settings.get(
-            'semes.unicode_length', 58))
-        self.multipart = asbool(request.registry.settings.get(
-            'semes.multipart', False))
-        self.maxparts = int(request.registry.settings.get(
-            'semes.maxparts', 2))
-
         inline_css = """
-
 """
         self.response = {
             'reqts' : self.form.get_widget_resources(),
@@ -133,6 +173,10 @@ class Send:
             '_inline_css': inline_css,
         }
 
+
+    def _form(self):
+        """ return a new instance of SendForm """
+        return SendForm(self.max_parts).form
 
     @view_config(request_method="GET")
     def get(self):
@@ -145,6 +189,7 @@ class Send:
         return self.response
 
 
+    @view_config(request_method="POST", xhr=True, renderer="json")
     @view_config(request_method="POST")
     def post(self):
         """ post """
@@ -156,115 +201,37 @@ class Send:
         try:
             appstruct = self.form.validate(controls)
             message =  appstruct['message']
-            e164_phone = phonenumbers.\
-                format_number(phonenumbers.parse(appstruct['phone'], None),
-                              phonenumbers.PhoneNumberFormat.E164)
-        except deform.ValidationFailure:
-            self.response.update({
-                'form_rendered' : self.form.render(),
-            })
+            e164_phone = appstruct['phone']
+
+        except deform.ValidationFailure as exc:
+
+            response = {'status':False, 'errors': exc.error.asdict()}
+
+            if self.request.is_xhr:
+                return response
+
+            response['form_rendered'] = self.form.render()
+            self.response.update(response)
+
             return self.response
 
-        # custom validation
-        res_lenok = self.lenok(message)
-        if res_lenok['status'] is False:
-            self.form.error = colander.Invalid(self.form)
-            self.form['message'].error = colander.Invalid(self.form['message'],
-                                                          res_lenok['msg'])
-            self.response.update({
-                'form_rendered' : self.form.render(appstruct),
-            })
-            return self.response
+        encoded = encodeSMS(message)
+        submission_ids = sendSMS(encoded, self.smsdrc, e164_phone)
 
-        entry_id = 'ConcatenatedTextLong' \
-        if self.multipart is True and \
-           ((message.isascii() and len(message) > self.ascii_length or
-            not message.isascii() and len(message) > self.unicode_length)) \
-        else 'Text'
-
-        smsinfo = {
-            'Unicode': not message.isascii(),
-            'Entries':  [
-                {   'ID': entry_id,
-                    'Buffer': message
-                }
-            ]}
-
-        encoded = gammu.EncodeSMS(smsinfo)
-
-        #import pdb;  pdb.set_trace()
-
-        # Text that span more than one message
-        if entry_id == 'Text' and len(encoded) > 1:
-            error = \
-                ('Message length is %s in charset %s and generates %s messages.'
-                 ' Please adjust your settings.') \
-                 % (len(message),
-                    'ASCII' if message.isascii() else 'Unicode',
-                    len(encoded))
-            self.form.error = colander.Invalid(self.form)
-            self.form['message'].error = colander.Invalid(self.form['message'],
-                                                          error)
-
-            self.response.update({
-                'form_rendered' : self.form.render(appstruct),
-            })
-            return self.response
-
-        # ASCII messages truncated
-        if entry_id == 'Text' and len(encoded) == 1 \
-           and encoded[0]['Length'] < len(message):
-            error =  'Message length is %s in charset %s and truncated at %s' \
-                % (len(message),
-                   'ASCII' if message.isascii() else 'Unicode',
-                   encoded[0]['Length'])
-            self.form.error = colander.Invalid(self.form['message'])
-            self.form['message'].error = colander.Invalid(self.form['message'],
-                                                          error)
-
-            self.response.update({
-                'form_rendered' : self.form.render(appstruct),
-            })
-            return self.response
-
-        # Maxparts message exceded
-        if entry_id == 'ConcatenatedTextLong' and len(encoded) > self.maxparts:
-            error = \
-                ('Message parts length is %s in charset %s '
-                 'and exceeds %s limit .') \
-                 % (len(encoded),
-                    'ASCII' if message.isascii() else 'Unicode',
-                    self.maxparts)
-            self.form.error = colander.Invalid(self.form['message'])
-            self.form['message'].error = colander.Invalid(self.form['message'],
-                                                          error)
-
-            self.response.update({
-                'form_rendered' : self.form.render(appstruct),
-            })
-            return self.response
-
-        # Send messages
-        submission_ids = []
-        for msgstruct in encoded:
-            # Fill in numbers
-            msgstruct['SMSC'] = {'Location': 1}
-            msgstruct['Number'] = e164_phone
-
-            #print(len(message))
-            #print(msgstruct)
-
-            # Send the msgstruct
-            submission_ids.append (self.smsd.InjectSMS([msgstruct]))
-
-        # Renew form
-        del self.form
-        self.form = self._form()
-        self.response.update({
+        response = {
             'status' : True,
-            'form_rendered' : self.form.render(),
             'submission_ids': submission_ids,
             'e164_phone' : e164_phone,
-        })
+        }
+
+        # import pdb;  pdb.set_trace() # pylint: disable=import-outside-toplevel, multiple-statements
+
+        if self.request.is_xhr:
+            return response
+
+        # Renew form
+        response['form_rendered'] = self._form().render()
+
+        self.response.update(response)
 
         return self.response
